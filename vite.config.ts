@@ -4,7 +4,7 @@ import { federation } from "@module-federation/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/remote-app-v2/",
+  base: "/remote-app-v3/",
   plugins: [
     react(),
     federation({
