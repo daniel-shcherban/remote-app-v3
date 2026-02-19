@@ -3,7 +3,7 @@ import { _ as __vitePreload } from './preload-helper-Fqj7938V.js';
 const exposesMap = {
     
         "./RemoteButton": async () => {
-          const importModule = await __vitePreload(() => import('./RemoteButton-BUbNZClN.js'),true              ?[]:void 0);
+          const importModule = await __vitePreload(() => import('./RemoteButton-Bdvyt4XC.js'),true              ?[]:void 0);
           const exportModule = {};
           Object.assign(exportModule, importModule);
           Object.defineProperty(exportModule, "__esModule", {
