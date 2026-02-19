@@ -16428,9 +16428,9 @@ function checkDCE() {
 
 var clientExports = client.exports;
 
-const reactLogo = "/remote-app-v2/assets/react-CHdo91hT.svg";
+const reactLogo = "/remote-app-v3/assets/react-CHdo91hT.svg";
 
-const viteLogo = "/remote-app-v2/vite.svg";
+const viteLogo = "/remote-app-v3/vite.svg";
 
 function App() {
   const [count, setCount] = remote__loadShare__react__loadShare__.useState(0);

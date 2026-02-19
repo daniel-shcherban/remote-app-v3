@@ -1,7 +1,7 @@
 const scriptRel = /* @__PURE__ */ (function detectScriptRel() {
 	const relList = typeof document !== "undefined" && document.createElement("link").relList;
 	return relList && relList.supports && relList.supports("modulepreload") ? "modulepreload" : "preload";
-})();const assetsURL = function(dep) { return "/remote-app-v2/"+dep };const seen = {};const __vitePreload = function preload(baseModule, deps, importerUrl) {
+})();const assetsURL = function(dep) { return "/remote-app-v3/"+dep };const seen = {};const __vitePreload = function preload(baseModule, deps, importerUrl) {
 	let promise = Promise.resolve();
 	if (true               && deps && deps.length > 0) {
 		document.getElementsByTagName("link");
