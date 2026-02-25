@@ -1,5 +1,6 @@
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
-import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-wiggCvvO.js';
+import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-BCX567UT.js';
+import './_commonjsHelpers-B85MJLTf.js';
 import './remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
 
 function RemoteButton() {
