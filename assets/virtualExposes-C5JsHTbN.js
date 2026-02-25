@@ -12,6 +12,17 @@ const exposesMap = {
           });
           return exportModule
         }
+      ,
+        "./Todos": async () => {
+          const importModule = await __vitePreload(() => import('./todos-Bt_3x5TY.js').then(n => n.t),true              ?[]:void 0);
+          const exportModule = {};
+          Object.assign(exportModule, importModule);
+          Object.defineProperty(exportModule, "__esModule", {
+            value: true,
+            enumerable: false
+          });
+          return exportModule
+        }
       
   };
 
