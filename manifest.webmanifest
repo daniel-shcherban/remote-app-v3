@@ -1,0 +1,10 @@
+{
+  "name": "remote",
+  "short_name": "remote",
+  "start_url": "/remote-app-v3/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#42b883",
+  "lang": "en",
+  "scope": "/remote-app-v3/"
+}

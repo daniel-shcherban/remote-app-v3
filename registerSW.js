@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/remote-app-v3/sw.js', { scope: '/remote-app-v3/' })})}
