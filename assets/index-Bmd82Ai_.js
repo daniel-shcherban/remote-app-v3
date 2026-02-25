@@ -2,7 +2,7 @@ import { r as remote__mf_v__runtimeInit__mf_v__, a as index_cjs } from './remote
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
 import { r as remote__loadShare__react__loadShare__, R as React$1 } from './remote__loadShare__react__loadShare__-BCX567UT.js';
 import { g as getDefaultExportFromCjs } from './_commonjsHelpers-B85MJLTf.js';
-import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__, T as Todos } from './todos-C7kAWrn1.js';
+import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__, T as Todos } from './todos-C5UdyUfm.js';
 
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {
