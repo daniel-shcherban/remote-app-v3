@@ -21668,6 +21668,12 @@ const queryClient = new remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query_
 const persister = remote__loadShare___mf_0_tanstack_mf_1_query_mf_2_async_mf_2_storage_mf_2_persister__loadShare__.createAsyncStoragePersister({
   storage: window.localStorage
 });
+window.addEventListener("offline", () => {
+  queryClient.setDefaultOptions({ queries: { enabled: false } });
+});
+window.addEventListener("online", () => {
+  queryClient.setDefaultOptions({ queries: { enabled: true } });
+});
 const router = createBrowserRouter(
   [
     {
