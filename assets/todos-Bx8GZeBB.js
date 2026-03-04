@@ -1,18 +1,6 @@
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
-import { r as remote__mf_v__runtimeInit__mf_v__, a as index_cjs } from './remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
-
-// dev uses dynamic import to separate chunks
-    
-    const {loadShare} = index_cjs;
-    const {initPromise} = remote__mf_v__runtimeInit__mf_v__;
-    const res = initPromise.then(_ => loadShare("@tanstack/react-query", {
-    customShareInfo: {shareConfig:{
-      singleton: false,
-      strictVersion: undefined,
-      requiredVersion: "^5.90.21"
-    }}}));
-    const exportModule = await res.then(factory => factory());
-    var remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__ = exportModule;
+import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__ } from './remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__-DQ2XyYjM.js';
+import './remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
 
 const BASE = "https://jsonplaceholder.typicode.com";
 async function fetchTodos() {
@@ -50,9 +38,4 @@ function Todos() {
   ] });
 }
 
-const todos = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
-  __proto__: null,
-  default: Todos
-}, Symbol.toStringTag, { value: 'Module' }));
-
-export { Todos as T, remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__ as r, todos as t };
+export { Todos as default };
