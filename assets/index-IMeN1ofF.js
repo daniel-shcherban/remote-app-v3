@@ -2,8 +2,7 @@ import { r as remote__mf_v__runtimeInit__mf_v__, a as index_cjs } from './remote
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
 import { r as remote__loadShare__react__loadShare__, R as React$1 } from './remote__loadShare__react__loadShare__-BCX567UT.js';
 import { g as getDefaultExportFromCjs } from './_commonjsHelpers-B85MJLTf.js';
-import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__ } from './remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__-DQ2XyYjM.js';
-import Todos from './todos-Czi27Ffw.js';
+import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__, T as Todos } from './todos-CkG9pY-v.js';
 
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {
@@ -381,16 +380,16 @@ var schedulerExports = scheduler.exports;
 
 // dev uses dynamic import to separate chunks
     
-    const {loadShare: loadShare$2} = index_cjs;
-    const {initPromise: initPromise$2} = remote__mf_v__runtimeInit__mf_v__;
-    const res$2 = initPromise$2.then(_ => loadShare$2("react-dom", {
+    const {loadShare} = index_cjs;
+    const {initPromise} = remote__mf_v__runtimeInit__mf_v__;
+    const res = initPromise.then(_ => loadShare("react-dom", {
     customShareInfo: {shareConfig:{
       singleton: false,
       strictVersion: undefined,
       requiredVersion: "^19.2.0"
     }}}));
-    const exportModule$2 = await res$2.then(factory => factory());
-    var remote__loadShare__react_mf_2_dom__loadShare__ = exportModule$2;
+    const exportModule = await res.then(factory => factory());
+    var remote__loadShare__react_mf_2_dom__loadShare__ = exportModule;
 
 const remote__loadShare__react_mf_2_dom__loadShare___default = /*@__PURE__*/getDefaultExportFromCjs(remote__loadShare__react_mf_2_dom__loadShare__);
 
@@ -21632,41 +21631,12 @@ function App() {
   ] });
 }
 
-// dev uses dynamic import to separate chunks
-    
-    const {loadShare: loadShare$1} = index_cjs;
-    const {initPromise: initPromise$1} = remote__mf_v__runtimeInit__mf_v__;
-    const res$1 = initPromise$1.then(_ => loadShare$1("@tanstack/query-async-storage-persister", {
-    customShareInfo: {shareConfig:{
-      singleton: false,
-      strictVersion: undefined,
-      requiredVersion: "^5.90.24"
-    }}}));
-    const exportModule$1 = await res$1.then(factory => factory());
-    var remote__loadShare___mf_0_tanstack_mf_1_query_mf_2_async_mf_2_storage_mf_2_persister__loadShare__ = exportModule$1;
-
-// dev uses dynamic import to separate chunks
-    
-    const {loadShare} = index_cjs;
-    const {initPromise} = remote__mf_v__runtimeInit__mf_v__;
-    const res = initPromise.then(_ => loadShare("@tanstack/react-query-persist-client", {
-    customShareInfo: {shareConfig:{
-      singleton: false,
-      strictVersion: undefined,
-      requiredVersion: "^5.90.24"
-    }}}));
-    const exportModule = await res.then(factory => factory());
-    var remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query_mf_2_persist_mf_2_client__loadShare__ = exportModule;
-
 const queryClient = new remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1e4
     }
   }
-});
-const persister = remote__loadShare___mf_0_tanstack_mf_1_query_mf_2_async_mf_2_storage_mf_2_persister__loadShare__.createAsyncStoragePersister({
-  storage: window.localStorage
 });
 window.addEventListener("offline", () => {
   queryClient.setDefaultOptions({ queries: { enabled: false } });
@@ -21688,12 +21658,5 @@ const router = createBrowserRouter(
   { basename: "/remote-app-v3" }
 );
 clientExports.createRoot(document.getElementById("root")).render(
-  /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare__react__loadShare__.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-    remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query_mf_2_persist_mf_2_client__loadShare__.PersistQueryClientProvider,
-    {
-      client: queryClient,
-      persistOptions: { persister },
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router })
-    }
-  ) })
+  /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare__react__loadShare__.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.QueryClientProvider, { client: queryClient, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router }) }) })
 );
