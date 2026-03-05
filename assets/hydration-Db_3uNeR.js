@@ -1,4 +1,48 @@
-import { t as timeoutManager, s as systemSetTimeoutZero } from './timeoutManager-CEr9Wjj5.js';
+var defaultTimeoutProvider = {
+  // We need the wrapper function syntax below instead of direct references to
+  // global setTimeout etc.
+  //
+  // BAD: `setTimeout: setTimeout`
+  // GOOD: `setTimeout: (cb, delay) => setTimeout(cb, delay)`
+  //
+  // If we use direct references here, then anything that wants to spy on or
+  // replace the global setTimeout (like tests) won't work since we'll already
+  // have a hard reference to the original implementation at the time when this
+  // file was imported.
+  setTimeout: (callback, delay) => setTimeout(callback, delay),
+  clearTimeout: (timeoutId) => clearTimeout(timeoutId),
+  setInterval: (callback, delay) => setInterval(callback, delay),
+  clearInterval: (intervalId) => clearInterval(intervalId)
+};
+var TimeoutManager = class {
+  // We cannot have TimeoutManager<T> as we must instantiate it with a concrete
+  // type at app boot; and if we leave that type, then any new timer provider
+  // would need to support ReturnType<typeof setTimeout>, which is infeasible.
+  //
+  // We settle for type safety for the TimeoutProvider type, and accept that
+  // this class is unsafe internally to allow for extension.
+  #provider = defaultTimeoutProvider;
+  #providerCalled = false;
+  setTimeoutProvider(provider) {
+    this.#provider = provider;
+  }
+  setTimeout(callback, delay) {
+    return this.#provider.setTimeout(callback, delay);
+  }
+  clearTimeout(timeoutId) {
+    this.#provider.clearTimeout(timeoutId);
+  }
+  setInterval(callback, delay) {
+    return this.#provider.setInterval(callback, delay);
+  }
+  clearInterval(intervalId) {
+    this.#provider.clearInterval(intervalId);
+  }
+};
+var timeoutManager = new TimeoutManager();
+function systemSetTimeoutZero(callback) {
+  setTimeout(callback, 0);
+}
 
 var isServer = typeof window === "undefined" || "Deno" in globalThis;
 function noop() {
@@ -410,84 +454,4 @@ function hydrate(client, dehydratedState, options) {
   );
 }
 
-// src/notifyManager.ts
-var defaultScheduler = systemSetTimeoutZero;
-function createNotifyManager() {
-  let queue = [];
-  let transactions = 0;
-  let notifyFn = (callback) => {
-    callback();
-  };
-  let batchNotifyFn = (callback) => {
-    callback();
-  };
-  let scheduleFn = defaultScheduler;
-  const schedule = (callback) => {
-    if (transactions) {
-      queue.push(callback);
-    } else {
-      scheduleFn(() => {
-        notifyFn(callback);
-      });
-    }
-  };
-  const flush = () => {
-    const originalQueue = queue;
-    queue = [];
-    if (originalQueue.length) {
-      scheduleFn(() => {
-        batchNotifyFn(() => {
-          originalQueue.forEach((callback) => {
-            notifyFn(callback);
-          });
-        });
-      });
-    }
-  };
-  return {
-    batch: (callback) => {
-      let result;
-      transactions++;
-      try {
-        result = callback();
-      } finally {
-        transactions--;
-        if (!transactions) {
-          flush();
-        }
-      }
-      return result;
-    },
-    /**
-     * All calls to the wrapped function will be batched.
-     */
-    batchCalls: (callback) => {
-      return (...args) => {
-        schedule(() => {
-          callback(...args);
-        });
-      };
-    },
-    schedule,
-    /**
-     * Use this method to set a custom notify function.
-     * This can be used to for example wrap notifications with `React.act` while running tests.
-     */
-    setNotifyFunction: (fn) => {
-      notifyFn = fn;
-    },
-    /**
-     * Use this method to set a custom function to batch notifications together into a single tick.
-     * By default React Query will use the batch function provided by ReactDOM or React Native.
-     */
-    setBatchNotifyFunction: (fn) => {
-      batchNotifyFn = fn;
-    },
-    setScheduler: (fn) => {
-      scheduleFn = fn;
-    }
-  };
-}
-var notifyManager = createNotifyManager();
-
-export { defaultShouldDehydrateMutation as A, defaultShouldDehydrateQuery as B, dehydrate as C, keepPreviousData as D, isValidTimeout as a, resolveEnabled as b, skipToken as c, resolveStaleTime as d, notifyManager as e, ensureQueryFn as f, shallowEqualObjects as g, addToStart as h, isServer as i, addToEnd as j, addConsumeAwareSignal as k, hashKey as l, matchMutation as m, noop as n, replaceEqualDeep as o, pendingThenable as p, hashQueryKeyByOptions as q, replaceData as r, sleep as s, timeUntilStale as t, matchQuery as u, functionalUpdate as v, partialMatchKey as w, shouldThrowError as x, hydrate as y, defaultScheduler as z };
+export { shouldThrowError as A, defaultShouldDehydrateMutation as B, defaultShouldDehydrateQuery as C, keepPreviousData as D, sleep as a, isValidTimeout as b, resolveEnabled as c, dehydrate as d, skipToken as e, resolveStaleTime as f, timeUntilStale as g, hydrate as h, isServer as i, ensureQueryFn as j, shallowEqualObjects as k, addToStart as l, addToEnd as m, noop as n, addConsumeAwareSignal as o, pendingThenable as p, matchMutation as q, replaceData as r, systemSetTimeoutZero as s, timeoutManager as t, hashKey as u, replaceEqualDeep as v, hashQueryKeyByOptions as w, matchQuery as x, functionalUpdate as y, partialMatchKey as z };
