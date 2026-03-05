@@ -2866,16 +2866,17 @@ function del(key, customStore = defaultGetStore()) {
     });
 }
 
-function createIDBPersister(idbValidKey = "reactQueryRemote") {
+function createIDBPersister(dbName) {
+  const store = createStore(dbName, "cache");
   return {
     persistClient: async (client) => {
-      await set(idbValidKey, client);
+      await set("client", client, store);
     },
     restoreClient: async () => {
-      return await get(idbValidKey);
+      return await get("client", store);
     },
     removeClient: async () => {
-      await del(idbValidKey);
+      await del("client", store);
     }
   };
 }
@@ -2950,7 +2951,7 @@ const queryClient = new QueryClient({
     }
   }
 });
-const persister = createIDBPersister();
+const persister = createIDBPersister("remote");
 function Todos() {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     PersistQueryClientProvider,
