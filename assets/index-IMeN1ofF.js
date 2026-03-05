@@ -21627,7 +21627,7 @@ function useLinkClickHandler(to, _temp) {
 function App() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Home" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/todos", children: "Go to Todos 1" }) })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/todos", children: "Go to Todos" }) })
   ] });
 }
 
