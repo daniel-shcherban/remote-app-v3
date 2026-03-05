@@ -3,6 +3,7 @@ import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
 import { r as remote__loadShare__react__loadShare__, R as React$1 } from './remote__loadShare__react__loadShare__-BCX567UT.js';
 import { g as getDefaultExportFromCjs } from './_commonjsHelpers-B85MJLTf.js';
 import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__, T as Todos } from './todos-CkG9pY-v.js';
+import { t as timeoutManager, h as hydrate, d as dehydrate } from './hydration-Db_3uNeR.js';
 
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {
@@ -5650,7 +5651,7 @@ function startTransition(fiber, queue, pendingState, finishedState, callback) {
       (ReactSharedInternals.T = prevTransition);
   }
 }
-function noop() {}
+function noop$2() {}
 function startHostTransition(formFiber, pendingState, action, formData) {
   if (5 !== formFiber.tag) throw Error(formatProdErrorMessage(476));
   var queue = ensureFormComponentIsStateful(formFiber).queue;
@@ -5660,7 +5661,7 @@ function startHostTransition(formFiber, pendingState, action, formData) {
     pendingState,
     sharedNotPendingObject,
     null === action
-      ? noop
+      ? noop$2
       : function () {
           requestFormReset$1(formFiber);
           return action(formData);
@@ -21631,12 +21632,199 @@ function App() {
   ] });
 }
 
+// src/utils.ts
+function noop() {
+}
+
+// src/asyncThrottle.ts
+function asyncThrottle(func, { interval = 1e3, onError = noop } = {}) {
+  if (typeof func !== "function") throw new Error("argument is not function.");
+  let nextExecutionTime = 0;
+  let lastArgs = null;
+  let isExecuting = false;
+  let isScheduled = false;
+  return async (...args) => {
+    lastArgs = args;
+    if (isScheduled) return;
+    isScheduled = true;
+    while (isExecuting) {
+      await new Promise((done) => timeoutManager.setTimeout(done, interval));
+    }
+    while (Date.now() < nextExecutionTime) {
+      await new Promise(
+        (done) => timeoutManager.setTimeout(done, nextExecutionTime - Date.now())
+      );
+    }
+    isScheduled = false;
+    isExecuting = true;
+    try {
+      await func(...lastArgs);
+    } catch (error) {
+      try {
+        onError(error);
+      } catch {
+      }
+    }
+    nextExecutionTime = Date.now() + interval;
+    isExecuting = false;
+  };
+}
+
+// src/index.ts
+var createAsyncStoragePersister = ({
+  storage,
+  key = `REACT_QUERY_OFFLINE_CACHE`,
+  throttleTime = 1e3,
+  serialize = JSON.stringify,
+  deserialize = JSON.parse,
+  retry
+}) => {
+  if (storage) {
+    const trySave = async (persistedClient) => {
+      try {
+        const serialized = await serialize(persistedClient);
+        await storage.setItem(key, serialized);
+        return;
+      } catch (error) {
+        return error;
+      }
+    };
+    return {
+      persistClient: asyncThrottle(
+        async (persistedClient) => {
+          let client = persistedClient;
+          let error = await trySave(client);
+          let errorCount = 0;
+          while (error && client) {
+            errorCount++;
+            client = await retry?.({
+              persistedClient: client,
+              error,
+              errorCount
+            });
+            if (client) {
+              error = await trySave(client);
+            }
+          }
+        },
+        { interval: throttleTime }
+      ),
+      restoreClient: async () => {
+        const cacheString = await storage.getItem(key);
+        if (!cacheString) {
+          return;
+        }
+        return await deserialize(cacheString);
+      },
+      removeClient: () => storage.removeItem(key)
+    };
+  }
+  return {
+    persistClient: noop,
+    restoreClient: () => Promise.resolve(void 0),
+    removeClient: noop
+  };
+};
+
+var cacheEventTypes = ["added", "removed", "updated"];
+function isCacheEventType(eventType) {
+  return cacheEventTypes.includes(eventType);
+}
+async function persistQueryClientRestore({
+  queryClient,
+  persister,
+  maxAge = 1e3 * 60 * 60 * 24,
+  buster = "",
+  hydrateOptions
+}) {
+  try {
+    const persistedClient = await persister.restoreClient();
+    if (persistedClient) {
+      if (persistedClient.timestamp) {
+        const expired = Date.now() - persistedClient.timestamp > maxAge;
+        const busted = persistedClient.buster !== buster;
+        if (expired || busted) {
+          return persister.removeClient();
+        } else {
+          hydrate(queryClient, persistedClient.clientState, hydrateOptions);
+        }
+      } else {
+        return persister.removeClient();
+      }
+    }
+  } catch (err) {
+    await persister.removeClient();
+    throw err;
+  }
+}
+async function persistQueryClientSave({
+  queryClient,
+  persister,
+  buster = "",
+  dehydrateOptions
+}) {
+  const persistClient = {
+    buster,
+    timestamp: Date.now(),
+    clientState: dehydrate(queryClient, dehydrateOptions)
+  };
+  await persister.persistClient(persistClient);
+}
+function persistQueryClientSubscribe(props) {
+  const unsubscribeQueryCache = props.queryClient.getQueryCache().subscribe((event) => {
+    if (isCacheEventType(event.type)) {
+      persistQueryClientSave(props);
+    }
+  });
+  const unsubscribeMutationCache = props.queryClient.getMutationCache().subscribe((event) => {
+    if (isCacheEventType(event.type)) {
+      persistQueryClientSave(props);
+    }
+  });
+  return () => {
+    unsubscribeQueryCache();
+    unsubscribeMutationCache();
+  };
+}
+
+var PersistQueryClientProvider = ({
+  children,
+  persistOptions,
+  onSuccess,
+  onError,
+  ...props
+}) => {
+  const [isRestoring, setIsRestoring] = remote__loadShare__react__loadShare__.useState(true);
+  const refs = remote__loadShare__react__loadShare__.useRef({ persistOptions, onSuccess, onError });
+  const didRestore = remote__loadShare__react__loadShare__.useRef(false);
+  remote__loadShare__react__loadShare__.useEffect(() => {
+    refs.current = { persistOptions, onSuccess, onError };
+  });
+  remote__loadShare__react__loadShare__.useEffect(() => {
+    const options = {
+      ...refs.current.persistOptions,
+      queryClient: props.client
+    };
+    if (!didRestore.current) {
+      didRestore.current = true;
+      persistQueryClientRestore(options).then(() => refs.current.onSuccess?.()).catch(() => refs.current.onError?.()).finally(() => {
+        setIsRestoring(false);
+      });
+    }
+    return isRestoring ? void 0 : persistQueryClientSubscribe(options);
+  }, [props.client, isRestoring]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.QueryClientProvider, { ...props, children: /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.IsRestoringProvider, { value: isRestoring, children }) });
+};
+
 const queryClient = new remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1e4
     }
   }
+});
+const persister = createAsyncStoragePersister({
+  storage: window.localStorage
 });
 window.addEventListener("offline", () => {
   queryClient.setDefaultOptions({ queries: { enabled: false } });
@@ -21658,5 +21846,12 @@ const router = createBrowserRouter(
   { basename: "/remote-app-v3" }
 );
 clientExports.createRoot(document.getElementById("root")).render(
-  /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare__react__loadShare__.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.QueryClientProvider, { client: queryClient, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router }) }) })
+  /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare__react__loadShare__.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+    PersistQueryClientProvider,
+    {
+      client: queryClient,
+      persistOptions: { persister },
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router })
+    }
+  ) })
 );
