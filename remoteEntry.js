@@ -1,26 +1,16 @@
 import { i as init_1, r as remote__mf_v__runtimeInit__mf_v__ } from './assets/remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
-import exposesMap from './assets/virtualExposes-xf8PY4xu.js';
+import exposesMap from './assets/virtualExposes-L_xzshRj.js';
 import { _ as __vitePreload } from './assets/preload-helper-Fqj7938V.js';
 
 const importMap = {
       
-        "@tanstack/react-query": async () => {
-          let pkg = await __vitePreload(() => import('./assets/index-CXaJR_7Y.js'),true              ?[]:void 0);
-          return pkg
-        }
-      ,
         "react": async () => {
           let pkg = await __vitePreload(() => import('./assets/index-9R1akZrm.js').then(n => n.i),true              ?[]:void 0);
           return pkg
         }
       ,
-        "@tanstack/query-async-storage-persister": async () => {
-          let pkg = await __vitePreload(() => import('./assets/index-CgjQ5ChB.js'),true              ?[]:void 0);
-          return pkg
-        }
-      ,
-        "@tanstack/react-query-persist-client": async () => {
-          let pkg = await __vitePreload(() => import('./assets/index-0az2V8lI.js'),true              ?[]:void 0);
+        "@tanstack/react-query": async () => {
+          let pkg = await __vitePreload(() => import('./assets/index-CrXJTbmC.js'),true              ?[]:void 0);
           return pkg
         }
       ,
@@ -28,41 +18,10 @@ const importMap = {
           let pkg = await __vitePreload(() => import('./assets/index-J_FmfrY7.js').then(n => n.i),true              ?[]:void 0);
           return pkg
         }
-      ,
-        "@tanstack/query-persist-client-core": async () => {
-          let pkg = await __vitePreload(() => import('./assets/index-B9UktRyM.js'),true              ?[]:void 0);
-          return pkg
-        }
       
     };
       const usedShared = {
       
-          "@tanstack/react-query": {
-            name: "@tanstack/react-query",
-            version: "5.90.21",
-            scope: ["default"],
-            loaded: false,
-            from: "remote",
-            async get () {
-              usedShared["@tanstack/react-query"].loaded = true;
-              const {"@tanstack/react-query": pkgDynamicImport} = importMap; 
-              const res = await pkgDynamicImport();
-              const exportModule = {...res};
-              // All npm packages pre-built by vite will be converted to esm
-              Object.defineProperty(exportModule, "__esModule", {
-                value: true,
-                enumerable: false
-              });
-              return function () {
-                return exportModule
-              }
-            },
-            shareConfig: {
-              singleton: false,
-              requiredVersion: "^5.90.21"
-            }
-          }
-        ,
           "react": {
             name: "react",
             version: "19.2.0",
@@ -89,15 +48,15 @@ const importMap = {
             }
           }
         ,
-          "@tanstack/query-async-storage-persister": {
-            name: "@tanstack/query-async-storage-persister",
-            version: "5.90.24",
+          "@tanstack/react-query": {
+            name: "@tanstack/react-query",
+            version: "5.90.21",
             scope: ["default"],
             loaded: false,
             from: "remote",
             async get () {
-              usedShared["@tanstack/query-async-storage-persister"].loaded = true;
-              const {"@tanstack/query-async-storage-persister": pkgDynamicImport} = importMap; 
+              usedShared["@tanstack/react-query"].loaded = true;
+              const {"@tanstack/react-query": pkgDynamicImport} = importMap; 
               const res = await pkgDynamicImport();
               const exportModule = {...res};
               // All npm packages pre-built by vite will be converted to esm
@@ -111,33 +70,7 @@ const importMap = {
             },
             shareConfig: {
               singleton: false,
-              requiredVersion: "^5.90.24"
-            }
-          }
-        ,
-          "@tanstack/react-query-persist-client": {
-            name: "@tanstack/react-query-persist-client",
-            version: "5.90.24",
-            scope: ["default"],
-            loaded: false,
-            from: "remote",
-            async get () {
-              usedShared["@tanstack/react-query-persist-client"].loaded = true;
-              const {"@tanstack/react-query-persist-client": pkgDynamicImport} = importMap; 
-              const res = await pkgDynamicImport();
-              const exportModule = {...res};
-              // All npm packages pre-built by vite will be converted to esm
-              Object.defineProperty(exportModule, "__esModule", {
-                value: true,
-                enumerable: false
-              });
-              return function () {
-                return exportModule
-              }
-            },
-            shareConfig: {
-              singleton: false,
-              requiredVersion: "^5.90.24"
+              requiredVersion: "^5.90.21"
             }
           }
         ,
@@ -164,32 +97,6 @@ const importMap = {
             shareConfig: {
               singleton: false,
               requiredVersion: "^19.2.0"
-            }
-          }
-        ,
-          "@tanstack/query-persist-client-core": {
-            name: "@tanstack/query-persist-client-core",
-            version: "5.92.1",
-            scope: ["default"],
-            loaded: false,
-            from: "remote",
-            async get () {
-              usedShared["@tanstack/query-persist-client-core"].loaded = true;
-              const {"@tanstack/query-persist-client-core": pkgDynamicImport} = importMap; 
-              const res = await pkgDynamicImport();
-              const exportModule = {...res};
-              // All npm packages pre-built by vite will be converted to esm
-              Object.defineProperty(exportModule, "__esModule", {
-                value: true,
-                enumerable: false
-              });
-              return function () {
-                return exportModule
-              }
-            },
-            shareConfig: {
-              singleton: false,
-              requiredVersion: "^5.92.1"
             }
           }
         
