@@ -14,7 +14,7 @@ const exposesMap = {
         }
       ,
         "./Todos": async () => {
-          const importModule = await __vitePreload(() => import('./todos-D2gGJeRT.js').then(n => n.u),true              ?[]:void 0);
+          const importModule = await __vitePreload(() => import('./todos-C0YytxQY.js'),true              ?[]:void 0);
           const exportModule = {};
           Object.assign(exportModule, importModule);
           Object.defineProperty(exportModule, "__esModule", {
