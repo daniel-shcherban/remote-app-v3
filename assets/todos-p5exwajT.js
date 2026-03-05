@@ -1,8 +1,5 @@
-import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-BCX567UT.js';
-import { i as isServer, p as pendingThenable, s as sleep, a as isValidTimeout, r as replaceData, n as noop, b as resolveEnabled, c as skipToken, d as resolveStaleTime, t as timeUntilStale, e as notifyManager, f as ensureQueryFn, g as shallowEqualObjects, h as addToStart, j as addToEnd, k as addConsumeAwareSignal, m as matchMutation, l as hashKey, o as replaceEqualDeep, q as hashQueryKeyByOptions, u as matchQuery, v as functionalUpdate, w as partialMatchKey, x as shouldThrowError, y as hydrate } from './notifyManager-DgMMGEIW.js';
-export { z as defaultScheduler, A as defaultShouldDehydrateMutation, B as defaultShouldDehydrateQuery, C as dehydrate, D as keepPreviousData } from './notifyManager-DgMMGEIW.js';
-import { t as timeoutManager } from './timeoutManager-CEr9Wjj5.js';
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
+import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-BCX567UT.js';
 import './_commonjsHelpers-B85MJLTf.js';
 import './remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
 
@@ -28,6 +25,284 @@ var Subscribable = class {
   onUnsubscribe() {
   }
 };
+
+var defaultTimeoutProvider = {
+  // We need the wrapper function syntax below instead of direct references to
+  // global setTimeout etc.
+  //
+  // BAD: `setTimeout: setTimeout`
+  // GOOD: `setTimeout: (cb, delay) => setTimeout(cb, delay)`
+  //
+  // If we use direct references here, then anything that wants to spy on or
+  // replace the global setTimeout (like tests) won't work since we'll already
+  // have a hard reference to the original implementation at the time when this
+  // file was imported.
+  setTimeout: (callback, delay) => setTimeout(callback, delay),
+  clearTimeout: (timeoutId) => clearTimeout(timeoutId),
+  setInterval: (callback, delay) => setInterval(callback, delay),
+  clearInterval: (intervalId) => clearInterval(intervalId)
+};
+var TimeoutManager = class {
+  // We cannot have TimeoutManager<T> as we must instantiate it with a concrete
+  // type at app boot; and if we leave that type, then any new timer provider
+  // would need to support ReturnType<typeof setTimeout>, which is infeasible.
+  //
+  // We settle for type safety for the TimeoutProvider type, and accept that
+  // this class is unsafe internally to allow for extension.
+  #provider = defaultTimeoutProvider;
+  #providerCalled = false;
+  setTimeoutProvider(provider) {
+    this.#provider = provider;
+  }
+  setTimeout(callback, delay) {
+    return this.#provider.setTimeout(callback, delay);
+  }
+  clearTimeout(timeoutId) {
+    this.#provider.clearTimeout(timeoutId);
+  }
+  setInterval(callback, delay) {
+    return this.#provider.setInterval(callback, delay);
+  }
+  clearInterval(intervalId) {
+    this.#provider.clearInterval(intervalId);
+  }
+};
+var timeoutManager = new TimeoutManager();
+function systemSetTimeoutZero(callback) {
+  setTimeout(callback, 0);
+}
+
+var isServer = typeof window === "undefined" || "Deno" in globalThis;
+function noop() {
+}
+function functionalUpdate(updater, input) {
+  return typeof updater === "function" ? updater(input) : updater;
+}
+function isValidTimeout(value) {
+  return typeof value === "number" && value >= 0 && value !== Infinity;
+}
+function timeUntilStale(updatedAt, staleTime) {
+  return Math.max(updatedAt + (staleTime || 0) - Date.now(), 0);
+}
+function resolveStaleTime(staleTime, query) {
+  return typeof staleTime === "function" ? staleTime(query) : staleTime;
+}
+function resolveEnabled(enabled, query) {
+  return typeof enabled === "function" ? enabled(query) : enabled;
+}
+function matchQuery(filters, query) {
+  const {
+    type = "all",
+    exact,
+    fetchStatus,
+    predicate,
+    queryKey,
+    stale
+  } = filters;
+  if (queryKey) {
+    if (exact) {
+      if (query.queryHash !== hashQueryKeyByOptions(queryKey, query.options)) {
+        return false;
+      }
+    } else if (!partialMatchKey(query.queryKey, queryKey)) {
+      return false;
+    }
+  }
+  if (type !== "all") {
+    const isActive = query.isActive();
+    if (type === "active" && !isActive) {
+      return false;
+    }
+    if (type === "inactive" && isActive) {
+      return false;
+    }
+  }
+  if (typeof stale === "boolean" && query.isStale() !== stale) {
+    return false;
+  }
+  if (fetchStatus && fetchStatus !== query.state.fetchStatus) {
+    return false;
+  }
+  if (predicate && !predicate(query)) {
+    return false;
+  }
+  return true;
+}
+function matchMutation(filters, mutation) {
+  const { exact, status, predicate, mutationKey } = filters;
+  if (mutationKey) {
+    if (!mutation.options.mutationKey) {
+      return false;
+    }
+    if (exact) {
+      if (hashKey(mutation.options.mutationKey) !== hashKey(mutationKey)) {
+        return false;
+      }
+    } else if (!partialMatchKey(mutation.options.mutationKey, mutationKey)) {
+      return false;
+    }
+  }
+  if (status && mutation.state.status !== status) {
+    return false;
+  }
+  if (predicate && !predicate(mutation)) {
+    return false;
+  }
+  return true;
+}
+function hashQueryKeyByOptions(queryKey, options) {
+  const hashFn = options?.queryKeyHashFn || hashKey;
+  return hashFn(queryKey);
+}
+function hashKey(queryKey) {
+  return JSON.stringify(
+    queryKey,
+    (_, val) => isPlainObject(val) ? Object.keys(val).sort().reduce((result, key) => {
+      result[key] = val[key];
+      return result;
+    }, {}) : val
+  );
+}
+function partialMatchKey(a, b) {
+  if (a === b) {
+    return true;
+  }
+  if (typeof a !== typeof b) {
+    return false;
+  }
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    return Object.keys(b).every((key) => partialMatchKey(a[key], b[key]));
+  }
+  return false;
+}
+var hasOwn = Object.prototype.hasOwnProperty;
+function replaceEqualDeep(a, b, depth = 0) {
+  if (a === b) {
+    return a;
+  }
+  if (depth > 500) return b;
+  const array = isPlainArray(a) && isPlainArray(b);
+  if (!array && !(isPlainObject(a) && isPlainObject(b))) return b;
+  const aItems = array ? a : Object.keys(a);
+  const aSize = aItems.length;
+  const bItems = array ? b : Object.keys(b);
+  const bSize = bItems.length;
+  const copy = array ? new Array(bSize) : {};
+  let equalItems = 0;
+  for (let i = 0; i < bSize; i++) {
+    const key = array ? i : bItems[i];
+    const aItem = a[key];
+    const bItem = b[key];
+    if (aItem === bItem) {
+      copy[key] = aItem;
+      if (array ? i < aSize : hasOwn.call(a, key)) equalItems++;
+      continue;
+    }
+    if (aItem === null || bItem === null || typeof aItem !== "object" || typeof bItem !== "object") {
+      copy[key] = bItem;
+      continue;
+    }
+    const v = replaceEqualDeep(aItem, bItem, depth + 1);
+    copy[key] = v;
+    if (v === aItem) equalItems++;
+  }
+  return aSize === bSize && equalItems === aSize ? a : copy;
+}
+function shallowEqualObjects(a, b) {
+  if (!b || Object.keys(a).length !== Object.keys(b).length) {
+    return false;
+  }
+  for (const key in a) {
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
+}
+function isPlainArray(value) {
+  return Array.isArray(value) && value.length === Object.keys(value).length;
+}
+function isPlainObject(o) {
+  if (!hasObjectPrototype(o)) {
+    return false;
+  }
+  const ctor = o.constructor;
+  if (ctor === void 0) {
+    return true;
+  }
+  const prot = ctor.prototype;
+  if (!hasObjectPrototype(prot)) {
+    return false;
+  }
+  if (!prot.hasOwnProperty("isPrototypeOf")) {
+    return false;
+  }
+  if (Object.getPrototypeOf(o) !== Object.prototype) {
+    return false;
+  }
+  return true;
+}
+function hasObjectPrototype(o) {
+  return Object.prototype.toString.call(o) === "[object Object]";
+}
+function sleep(timeout) {
+  return new Promise((resolve) => {
+    timeoutManager.setTimeout(resolve, timeout);
+  });
+}
+function replaceData(prevData, data, options) {
+  if (typeof options.structuralSharing === "function") {
+    return options.structuralSharing(prevData, data);
+  } else if (options.structuralSharing !== false) {
+    return replaceEqualDeep(prevData, data);
+  }
+  return data;
+}
+function addToEnd(items, item, max = 0) {
+  const newItems = [...items, item];
+  return max && newItems.length > max ? newItems.slice(1) : newItems;
+}
+function addToStart(items, item, max = 0) {
+  const newItems = [item, ...items];
+  return max && newItems.length > max ? newItems.slice(0, -1) : newItems;
+}
+var skipToken = /* @__PURE__ */ Symbol();
+function ensureQueryFn(options, fetchOptions) {
+  if (!options.queryFn && fetchOptions?.initialPromise) {
+    return () => fetchOptions.initialPromise;
+  }
+  if (!options.queryFn || options.queryFn === skipToken) {
+    return () => Promise.reject(new Error(`Missing queryFn: '${options.queryHash}'`));
+  }
+  return options.queryFn;
+}
+function shouldThrowError(throwOnError, params) {
+  if (typeof throwOnError === "function") {
+    return throwOnError(...params);
+  }
+  return !!throwOnError;
+}
+function addConsumeAwareSignal(object, getSignal, onCancelled) {
+  let consumed = false;
+  let signal;
+  Object.defineProperty(object, "signal", {
+    enumerable: true,
+    get: () => {
+      signal ??= getSignal();
+      if (consumed) {
+        return signal;
+      }
+      consumed = true;
+      if (signal.aborted) {
+        onCancelled();
+      } else {
+        signal.addEventListener("abort", onCancelled, { once: true });
+      }
+      return signal;
+    }
+  });
+  return object;
+}
 
 // src/focusManager.ts
 var FocusManager = class extends Subscribable {
@@ -90,6 +365,261 @@ var FocusManager = class extends Subscribable {
   }
 };
 var focusManager = new FocusManager();
+
+// src/thenable.ts
+function pendingThenable() {
+  let resolve;
+  let reject;
+  const thenable = new Promise((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
+  });
+  thenable.status = "pending";
+  thenable.catch(() => {
+  });
+  function finalize(data) {
+    Object.assign(thenable, data);
+    delete thenable.resolve;
+    delete thenable.reject;
+  }
+  thenable.resolve = (value) => {
+    finalize({
+      status: "fulfilled",
+      value
+    });
+    resolve(value);
+  };
+  thenable.reject = (reason) => {
+    finalize({
+      status: "rejected",
+      reason
+    });
+    reject(reason);
+  };
+  return thenable;
+}
+function tryResolveSync(promise) {
+  let data;
+  promise.then((result) => {
+    data = result;
+    return result;
+  }, noop)?.catch(noop);
+  if (data !== void 0) {
+    return { data };
+  }
+  return void 0;
+}
+
+function defaultTransformerFn(data) {
+  return data;
+}
+function dehydrateMutation(mutation) {
+  return {
+    mutationKey: mutation.options.mutationKey,
+    state: mutation.state,
+    ...mutation.options.scope && { scope: mutation.options.scope },
+    ...mutation.meta && { meta: mutation.meta }
+  };
+}
+function dehydrateQuery(query, serializeData, shouldRedactErrors) {
+  const dehydratePromise = () => {
+    const promise = query.promise?.then(serializeData).catch((error) => {
+      if (!shouldRedactErrors(error)) {
+        return Promise.reject(error);
+      }
+      return Promise.reject(new Error("redacted"));
+    });
+    promise?.catch(noop);
+    return promise;
+  };
+  return {
+    dehydratedAt: Date.now(),
+    state: {
+      ...query.state,
+      ...query.state.data !== void 0 && {
+        data: serializeData(query.state.data)
+      }
+    },
+    queryKey: query.queryKey,
+    queryHash: query.queryHash,
+    ...query.state.status === "pending" && {
+      promise: dehydratePromise()
+    },
+    ...query.meta && { meta: query.meta }
+  };
+}
+function defaultShouldDehydrateMutation(mutation) {
+  return mutation.state.isPaused;
+}
+function defaultShouldDehydrateQuery(query) {
+  return query.state.status === "success";
+}
+function defaultShouldRedactErrors(_) {
+  return true;
+}
+function dehydrate(client, options = {}) {
+  const filterMutation = options.shouldDehydrateMutation ?? client.getDefaultOptions().dehydrate?.shouldDehydrateMutation ?? defaultShouldDehydrateMutation;
+  const mutations = client.getMutationCache().getAll().flatMap(
+    (mutation) => filterMutation(mutation) ? [dehydrateMutation(mutation)] : []
+  );
+  const filterQuery = options.shouldDehydrateQuery ?? client.getDefaultOptions().dehydrate?.shouldDehydrateQuery ?? defaultShouldDehydrateQuery;
+  const shouldRedactErrors = options.shouldRedactErrors ?? client.getDefaultOptions().dehydrate?.shouldRedactErrors ?? defaultShouldRedactErrors;
+  const serializeData = options.serializeData ?? client.getDefaultOptions().dehydrate?.serializeData ?? defaultTransformerFn;
+  const queries = client.getQueryCache().getAll().flatMap(
+    (query) => filterQuery(query) ? [dehydrateQuery(query, serializeData, shouldRedactErrors)] : []
+  );
+  return { mutations, queries };
+}
+function hydrate(client, dehydratedState, options) {
+  if (typeof dehydratedState !== "object" || dehydratedState === null) {
+    return;
+  }
+  const mutationCache = client.getMutationCache();
+  const queryCache = client.getQueryCache();
+  const deserializeData = options?.defaultOptions?.deserializeData ?? client.getDefaultOptions().hydrate?.deserializeData ?? defaultTransformerFn;
+  const mutations = dehydratedState.mutations || [];
+  const queries = dehydratedState.queries || [];
+  mutations.forEach(({ state, ...mutationOptions }) => {
+    mutationCache.build(
+      client,
+      {
+        ...client.getDefaultOptions().hydrate?.mutations,
+        ...options?.defaultOptions?.mutations,
+        ...mutationOptions
+      },
+      state
+    );
+  });
+  queries.forEach(
+    ({ queryKey, state, queryHash, meta, promise, dehydratedAt }) => {
+      const syncData = promise ? tryResolveSync(promise) : void 0;
+      const rawData = state.data === void 0 ? syncData?.data : state.data;
+      const data = rawData === void 0 ? rawData : deserializeData(rawData);
+      let query = queryCache.get(queryHash);
+      const existingQueryIsPending = query?.state.status === "pending";
+      const existingQueryIsFetching = query?.state.fetchStatus === "fetching";
+      if (query) {
+        const hasNewerSyncData = syncData && // We only need this undefined check to handle older dehydration
+        // payloads that might not have dehydratedAt
+        dehydratedAt !== void 0 && dehydratedAt > query.state.dataUpdatedAt;
+        if (state.dataUpdatedAt > query.state.dataUpdatedAt || hasNewerSyncData) {
+          const { fetchStatus: _ignored, ...serializedState } = state;
+          query.setState({
+            ...serializedState,
+            data
+          });
+        }
+      } else {
+        query = queryCache.build(
+          client,
+          {
+            ...client.getDefaultOptions().hydrate?.queries,
+            ...options?.defaultOptions?.queries,
+            queryKey,
+            queryHash,
+            meta
+          },
+          // Reset fetch status to idle to avoid
+          // query being stuck in fetching state upon hydration
+          {
+            ...state,
+            data,
+            fetchStatus: "idle",
+            status: data !== void 0 ? "success" : state.status
+          }
+        );
+      }
+      if (promise && !existingQueryIsPending && !existingQueryIsFetching && // Only hydrate if dehydration is newer than any existing data,
+      // this is always true for new queries
+      (dehydratedAt === void 0 || dehydratedAt > query.state.dataUpdatedAt)) {
+        query.fetch(void 0, {
+          // RSC transformed promises are not thenable
+          initialPromise: Promise.resolve(promise).then(deserializeData)
+        }).catch(noop);
+      }
+    }
+  );
+}
+
+// src/notifyManager.ts
+var defaultScheduler = systemSetTimeoutZero;
+function createNotifyManager() {
+  let queue = [];
+  let transactions = 0;
+  let notifyFn = (callback) => {
+    callback();
+  };
+  let batchNotifyFn = (callback) => {
+    callback();
+  };
+  let scheduleFn = defaultScheduler;
+  const schedule = (callback) => {
+    if (transactions) {
+      queue.push(callback);
+    } else {
+      scheduleFn(() => {
+        notifyFn(callback);
+      });
+    }
+  };
+  const flush = () => {
+    const originalQueue = queue;
+    queue = [];
+    if (originalQueue.length) {
+      scheduleFn(() => {
+        batchNotifyFn(() => {
+          originalQueue.forEach((callback) => {
+            notifyFn(callback);
+          });
+        });
+      });
+    }
+  };
+  return {
+    batch: (callback) => {
+      let result;
+      transactions++;
+      try {
+        result = callback();
+      } finally {
+        transactions--;
+        if (!transactions) {
+          flush();
+        }
+      }
+      return result;
+    },
+    /**
+     * All calls to the wrapped function will be batched.
+     */
+    batchCalls: (callback) => {
+      return (...args) => {
+        schedule(() => {
+          callback(...args);
+        });
+      };
+    },
+    schedule,
+    /**
+     * Use this method to set a custom notify function.
+     * This can be used to for example wrap notifications with `React.act` while running tests.
+     */
+    setNotifyFunction: (fn) => {
+      notifyFn = fn;
+    },
+    /**
+     * Use this method to set a custom function to batch notifications together into a single tick.
+     * By default React Query will use the batch function provided by ReactDOM or React Native.
+     */
+    setBatchNotifyFunction: (fn) => {
+      batchNotifyFn = fn;
+    },
+    setScheduler: (fn) => {
+      scheduleFn = fn;
+    }
+  };
+}
+var notifyManager = createNotifyManager();
 
 // src/onlineManager.ts
 var OnlineManager = class extends Subscribable {
@@ -157,9 +687,6 @@ var CancelledError = class extends Error {
     this.silent = options?.silent;
   }
 };
-function isCancelledError(value) {
-  return value instanceof CancelledError;
-}
 function createRetryer(config) {
   let isRetryCancelled = false;
   let failureCount = 0;
@@ -1253,76 +1780,6 @@ function getNextPageParam(options, { pages, pageParams }) {
 function getPreviousPageParam(options, { pages, pageParams }) {
   return pages.length > 0 ? options.getPreviousPageParam?.(pages[0], pages, pageParams[0], pageParams) : void 0;
 }
-function hasNextPage(options, data) {
-  if (!data) return false;
-  return getNextPageParam(options, data) != null;
-}
-function hasPreviousPage(options, data) {
-  if (!data || !options.getPreviousPageParam) return false;
-  return getPreviousPageParam(options, data) != null;
-}
-
-// src/infiniteQueryObserver.ts
-var InfiniteQueryObserver = class extends QueryObserver {
-  constructor(client, options) {
-    super(client, options);
-  }
-  bindMethods() {
-    super.bindMethods();
-    this.fetchNextPage = this.fetchNextPage.bind(this);
-    this.fetchPreviousPage = this.fetchPreviousPage.bind(this);
-  }
-  setOptions(options) {
-    super.setOptions({
-      ...options,
-      behavior: infiniteQueryBehavior()
-    });
-  }
-  getOptimisticResult(options) {
-    options.behavior = infiniteQueryBehavior();
-    return super.getOptimisticResult(options);
-  }
-  fetchNextPage(options) {
-    return this.fetch({
-      ...options,
-      meta: {
-        fetchMore: { direction: "forward" }
-      }
-    });
-  }
-  fetchPreviousPage(options) {
-    return this.fetch({
-      ...options,
-      meta: {
-        fetchMore: { direction: "backward" }
-      }
-    });
-  }
-  createResult(query, options) {
-    const { state } = query;
-    const parentResult = super.createResult(query, options);
-    const { isFetching, isRefetching, isError, isRefetchError } = parentResult;
-    const fetchDirection = state.fetchMeta?.fetchMore?.direction;
-    const isFetchNextPageError = isError && fetchDirection === "forward";
-    const isFetchingNextPage = isFetching && fetchDirection === "forward";
-    const isFetchPreviousPageError = isError && fetchDirection === "backward";
-    const isFetchingPreviousPage = isFetching && fetchDirection === "backward";
-    const result = {
-      ...parentResult,
-      fetchNextPage: this.fetchNextPage,
-      fetchPreviousPage: this.fetchPreviousPage,
-      hasNextPage: hasNextPage(options, state.data),
-      hasPreviousPage: hasPreviousPage(options, state.data),
-      isFetchNextPageError,
-      isFetchingNextPage,
-      isFetchPreviousPageError,
-      isFetchingPreviousPage,
-      isRefetchError: isRefetchError && !isFetchNextPageError && !isFetchPreviousPageError,
-      isRefetching: isRefetching && !isFetchingNextPage && !isFetchingPreviousPage
-    };
-    return result;
-  }
-};
 
 // src/mutation.ts
 var Mutation = class extends Removable {
@@ -1715,333 +2172,6 @@ function scopeFor(mutation) {
   return mutation.options.scope?.id;
 }
 
-// src/mutationObserver.ts
-var MutationObserver = class extends Subscribable {
-  #client;
-  #currentResult = void 0;
-  #currentMutation;
-  #mutateOptions;
-  constructor(client, options) {
-    super();
-    this.#client = client;
-    this.setOptions(options);
-    this.bindMethods();
-    this.#updateResult();
-  }
-  bindMethods() {
-    this.mutate = this.mutate.bind(this);
-    this.reset = this.reset.bind(this);
-  }
-  setOptions(options) {
-    const prevOptions = this.options;
-    this.options = this.#client.defaultMutationOptions(options);
-    if (!shallowEqualObjects(this.options, prevOptions)) {
-      this.#client.getMutationCache().notify({
-        type: "observerOptionsUpdated",
-        mutation: this.#currentMutation,
-        observer: this
-      });
-    }
-    if (prevOptions?.mutationKey && this.options.mutationKey && hashKey(prevOptions.mutationKey) !== hashKey(this.options.mutationKey)) {
-      this.reset();
-    } else if (this.#currentMutation?.state.status === "pending") {
-      this.#currentMutation.setOptions(this.options);
-    }
-  }
-  onUnsubscribe() {
-    if (!this.hasListeners()) {
-      this.#currentMutation?.removeObserver(this);
-    }
-  }
-  onMutationUpdate(action) {
-    this.#updateResult();
-    this.#notify(action);
-  }
-  getCurrentResult() {
-    return this.#currentResult;
-  }
-  reset() {
-    this.#currentMutation?.removeObserver(this);
-    this.#currentMutation = void 0;
-    this.#updateResult();
-    this.#notify();
-  }
-  mutate(variables, options) {
-    this.#mutateOptions = options;
-    this.#currentMutation?.removeObserver(this);
-    this.#currentMutation = this.#client.getMutationCache().build(this.#client, this.options);
-    this.#currentMutation.addObserver(this);
-    return this.#currentMutation.execute(variables);
-  }
-  #updateResult() {
-    const state = this.#currentMutation?.state ?? getDefaultState();
-    this.#currentResult = {
-      ...state,
-      isPending: state.status === "pending",
-      isSuccess: state.status === "success",
-      isError: state.status === "error",
-      isIdle: state.status === "idle",
-      mutate: this.mutate,
-      reset: this.reset
-    };
-  }
-  #notify(action) {
-    notifyManager.batch(() => {
-      if (this.#mutateOptions && this.hasListeners()) {
-        const variables = this.#currentResult.variables;
-        const onMutateResult = this.#currentResult.context;
-        const context = {
-          client: this.#client,
-          meta: this.options.meta,
-          mutationKey: this.options.mutationKey
-        };
-        if (action?.type === "success") {
-          try {
-            this.#mutateOptions.onSuccess?.(
-              action.data,
-              variables,
-              onMutateResult,
-              context
-            );
-          } catch (e) {
-            void Promise.reject(e);
-          }
-          try {
-            this.#mutateOptions.onSettled?.(
-              action.data,
-              null,
-              variables,
-              onMutateResult,
-              context
-            );
-          } catch (e) {
-            void Promise.reject(e);
-          }
-        } else if (action?.type === "error") {
-          try {
-            this.#mutateOptions.onError?.(
-              action.error,
-              variables,
-              onMutateResult,
-              context
-            );
-          } catch (e) {
-            void Promise.reject(e);
-          }
-          try {
-            this.#mutateOptions.onSettled?.(
-              void 0,
-              action.error,
-              variables,
-              onMutateResult,
-              context
-            );
-          } catch (e) {
-            void Promise.reject(e);
-          }
-        }
-      }
-      this.listeners.forEach((listener) => {
-        listener(this.#currentResult);
-      });
-    });
-  }
-};
-
-function difference(array1, array2) {
-  const excludeSet = new Set(array2);
-  return array1.filter((x) => !excludeSet.has(x));
-}
-function replaceAt(array, index, value) {
-  const copy = array.slice(0);
-  copy[index] = value;
-  return copy;
-}
-var QueriesObserver = class extends Subscribable {
-  #client;
-  #result;
-  #queries;
-  #options;
-  #observers;
-  #combinedResult;
-  #lastCombine;
-  #lastResult;
-  #lastQueryHashes;
-  #observerMatches = [];
-  constructor(client, queries, options) {
-    super();
-    this.#client = client;
-    this.#options = options;
-    this.#queries = [];
-    this.#observers = [];
-    this.#result = [];
-    this.setQueries(queries);
-  }
-  onSubscribe() {
-    if (this.listeners.size === 1) {
-      this.#observers.forEach((observer) => {
-        observer.subscribe((result) => {
-          this.#onUpdate(observer, result);
-        });
-      });
-    }
-  }
-  onUnsubscribe() {
-    if (!this.listeners.size) {
-      this.destroy();
-    }
-  }
-  destroy() {
-    this.listeners = /* @__PURE__ */ new Set();
-    this.#observers.forEach((observer) => {
-      observer.destroy();
-    });
-  }
-  setQueries(queries, options) {
-    this.#queries = queries;
-    this.#options = options;
-    notifyManager.batch(() => {
-      const prevObservers = this.#observers;
-      const newObserverMatches = this.#findMatchingObservers(this.#queries);
-      newObserverMatches.forEach(
-        (match) => match.observer.setOptions(match.defaultedQueryOptions)
-      );
-      const newObservers = newObserverMatches.map((match) => match.observer);
-      const newResult = newObservers.map(
-        (observer) => observer.getCurrentResult()
-      );
-      const hasLengthChange = prevObservers.length !== newObservers.length;
-      const hasIndexChange = newObservers.some(
-        (observer, index) => observer !== prevObservers[index]
-      );
-      const hasStructuralChange = hasLengthChange || hasIndexChange;
-      const hasResultChange = hasStructuralChange ? true : newResult.some((result, index) => {
-        const prev = this.#result[index];
-        return !prev || !shallowEqualObjects(result, prev);
-      });
-      if (!hasStructuralChange && !hasResultChange) return;
-      if (hasStructuralChange) {
-        this.#observerMatches = newObserverMatches;
-        this.#observers = newObservers;
-      }
-      this.#result = newResult;
-      if (!this.hasListeners()) return;
-      if (hasStructuralChange) {
-        difference(prevObservers, newObservers).forEach((observer) => {
-          observer.destroy();
-        });
-        difference(newObservers, prevObservers).forEach((observer) => {
-          observer.subscribe((result) => {
-            this.#onUpdate(observer, result);
-          });
-        });
-      }
-      this.#notify();
-    });
-  }
-  getCurrentResult() {
-    return this.#result;
-  }
-  getQueries() {
-    return this.#observers.map((observer) => observer.getCurrentQuery());
-  }
-  getObservers() {
-    return this.#observers;
-  }
-  getOptimisticResult(queries, combine) {
-    const matches = this.#findMatchingObservers(queries);
-    const result = matches.map(
-      (match) => match.observer.getOptimisticResult(match.defaultedQueryOptions)
-    );
-    const queryHashes = matches.map(
-      (match) => match.defaultedQueryOptions.queryHash
-    );
-    return [
-      result,
-      (r) => {
-        return this.#combineResult(r ?? result, combine, queryHashes);
-      },
-      () => {
-        return this.#trackResult(result, matches);
-      }
-    ];
-  }
-  #trackResult(result, matches) {
-    return matches.map((match, index) => {
-      const observerResult = result[index];
-      return !match.defaultedQueryOptions.notifyOnChangeProps ? match.observer.trackResult(observerResult, (accessedProp) => {
-        matches.forEach((m) => {
-          m.observer.trackProp(accessedProp);
-        });
-      }) : observerResult;
-    });
-  }
-  #combineResult(input, combine, queryHashes) {
-    if (combine) {
-      const lastHashes = this.#lastQueryHashes;
-      const queryHashesChanged = queryHashes !== void 0 && lastHashes !== void 0 && (lastHashes.length !== queryHashes.length || queryHashes.some((hash, i) => hash !== lastHashes[i]));
-      if (!this.#combinedResult || this.#result !== this.#lastResult || queryHashesChanged || combine !== this.#lastCombine) {
-        this.#lastCombine = combine;
-        this.#lastResult = this.#result;
-        if (queryHashes !== void 0) {
-          this.#lastQueryHashes = queryHashes;
-        }
-        this.#combinedResult = replaceEqualDeep(
-          this.#combinedResult,
-          combine(input)
-        );
-      }
-      return this.#combinedResult;
-    }
-    return input;
-  }
-  #findMatchingObservers(queries) {
-    const prevObserversMap = /* @__PURE__ */ new Map();
-    this.#observers.forEach((observer) => {
-      const key = observer.options.queryHash;
-      if (!key) return;
-      const previousObservers = prevObserversMap.get(key);
-      if (previousObservers) {
-        previousObservers.push(observer);
-      } else {
-        prevObserversMap.set(key, [observer]);
-      }
-    });
-    const observers = [];
-    queries.forEach((options) => {
-      const defaultedOptions = this.#client.defaultQueryOptions(options);
-      const match = prevObserversMap.get(defaultedOptions.queryHash)?.shift();
-      const observer = match ?? new QueryObserver(this.#client, defaultedOptions);
-      observers.push({
-        defaultedQueryOptions: defaultedOptions,
-        observer
-      });
-    });
-    return observers;
-  }
-  #onUpdate(observer, result) {
-    const index = this.#observers.indexOf(observer);
-    if (index !== -1) {
-      this.#result = replaceAt(this.#result, index, result);
-      this.#notify();
-    }
-  }
-  #notify() {
-    if (this.hasListeners()) {
-      const previousResult = this.#combinedResult;
-      const newTracked = this.#trackResult(this.#result, this.#observerMatches);
-      const newResult = this.#combineResult(newTracked, this.#options?.combine);
-      if (previousResult !== newResult) {
-        notifyManager.batch(() => {
-          this.listeners.forEach((listener) => {
-            listener(this.#result);
-          });
-        });
-      }
-    }
-  }
-};
-
 // src/queryCache.ts
 var QueryCache = class extends Subscribable {
   constructor(config = {}) {
@@ -2419,72 +2549,11 @@ var QueryClient = class {
   }
 };
 
-// src/streamedQuery.ts
-function streamedQuery({
-  streamFn,
-  refetchMode = "reset",
-  reducer = (items, chunk) => addToEnd(items, chunk),
-  initialValue = []
-}) {
-  return async (context) => {
-    const query = context.client.getQueryCache().find({ queryKey: context.queryKey, exact: true });
-    const isRefetch = !!query && query.state.data !== void 0;
-    if (isRefetch && refetchMode === "reset") {
-      query.setState({
-        status: "pending",
-        data: void 0,
-        error: null,
-        fetchStatus: "fetching"
-      });
-    }
-    let result = initialValue;
-    let cancelled = false;
-    const streamFnContext = addConsumeAwareSignal(
-      {
-        client: context.client,
-        meta: context.meta,
-        queryKey: context.queryKey,
-        pageParam: context.pageParam,
-        direction: context.direction
-      },
-      () => context.signal,
-      () => cancelled = true
-    );
-    const stream = await streamFn(streamFnContext);
-    const isReplaceRefetch = isRefetch && refetchMode === "replace";
-    for await (const chunk of stream) {
-      if (cancelled) {
-        break;
-      }
-      if (isReplaceRefetch) {
-        result = reducer(result, chunk);
-      } else {
-        context.client.setQueryData(
-          context.queryKey,
-          (prev) => reducer(prev === void 0 ? initialValue : prev, chunk)
-        );
-      }
-    }
-    if (isReplaceRefetch && !cancelled) {
-      context.client.setQueryData(context.queryKey, result);
-    }
-    return context.client.getQueryData(context.queryKey) ?? initialValue;
-  };
-}
-
-// src/types.ts
-var dataTagSymbol = /* @__PURE__ */ Symbol("dataTagSymbol");
-var dataTagErrorSymbol = /* @__PURE__ */ Symbol("dataTagErrorSymbol");
-var unsetMarker = /* @__PURE__ */ Symbol("unsetMarker");
-
 var QueryClientContext = remote__loadShare__react__loadShare__.createContext(
   void 0
 );
 var useQueryClient = (queryClient) => {
   const client = remote__loadShare__react__loadShare__.useContext(QueryClientContext);
-  if (queryClient) {
-    return queryClient;
-  }
   if (!client) {
     throw new Error("No QueryClient set, use QueryClientProvider to set one");
   }
@@ -2523,12 +2592,6 @@ function createValue() {
 }
 var QueryErrorResetBoundaryContext = remote__loadShare__react__loadShare__.createContext(createValue());
 var useQueryErrorResetBoundary = () => remote__loadShare__react__loadShare__.useContext(QueryErrorResetBoundaryContext);
-var QueryErrorResetBoundary = ({
-  children
-}) => {
-  const [value] = remote__loadShare__react__loadShare__.useState(() => createValue());
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(QueryErrorResetBoundaryContext.Provider, { value, children: typeof children === "function" ? children(value) : children });
-};
 
 var ensurePreventErrorBoundaryRetry = (options, errorResetBoundary, query) => {
   const throwOnError = query?.state.error && typeof options.throwOnError === "function" ? shouldThrowError(options.throwOnError, [query.state.error, query]) : options.throwOnError;
@@ -2554,7 +2617,6 @@ var getHasError = ({
 };
 
 // src/suspense.ts
-var defaultThrowOnError = (_error, query) => query.state.data === void 0;
 var ensureSuspenseTimers = (defaultedOptions) => {
   if (defaultedOptions.suspense) {
     const MIN_SUSPENSE_TIME_MS = 1e3;
@@ -2575,91 +2637,10 @@ var fetchOptimistic = (defaultedOptions, observer, errorResetBoundary) => observ
   errorResetBoundary.clearReset();
 });
 
-function useQueries({
-  queries,
-  ...options
-}, queryClient) {
-  const client = useQueryClient(queryClient);
-  const isRestoring = useIsRestoring();
-  const errorResetBoundary = useQueryErrorResetBoundary();
-  const defaultedQueries = remote__loadShare__react__loadShare__.useMemo(
-    () => queries.map((opts) => {
-      const defaultedOptions = client.defaultQueryOptions(
-        opts
-      );
-      defaultedOptions._optimisticResults = isRestoring ? "isRestoring" : "optimistic";
-      return defaultedOptions;
-    }),
-    [queries, client, isRestoring]
-  );
-  defaultedQueries.forEach((queryOptions) => {
-    ensureSuspenseTimers(queryOptions);
-    const query = client.getQueryCache().get(queryOptions.queryHash);
-    ensurePreventErrorBoundaryRetry(queryOptions, errorResetBoundary, query);
-  });
-  useClearResetErrorBoundary(errorResetBoundary);
-  const [observer] = remote__loadShare__react__loadShare__.useState(
-    () => new QueriesObserver(
-      client,
-      defaultedQueries,
-      options
-    )
-  );
-  const [optimisticResult, getCombinedResult, trackResult] = observer.getOptimisticResult(
-    defaultedQueries,
-    options.combine
-  );
-  const shouldSubscribe = !isRestoring && options.subscribed !== false;
-  remote__loadShare__react__loadShare__.useSyncExternalStore(
-    remote__loadShare__react__loadShare__.useCallback(
-      (onStoreChange) => shouldSubscribe ? observer.subscribe(notifyManager.batchCalls(onStoreChange)) : noop,
-      [observer, shouldSubscribe]
-    ),
-    () => observer.getCurrentResult(),
-    () => observer.getCurrentResult()
-  );
-  remote__loadShare__react__loadShare__.useEffect(() => {
-    observer.setQueries(
-      defaultedQueries,
-      options
-    );
-  }, [defaultedQueries, options, observer]);
-  const shouldAtLeastOneSuspend = optimisticResult.some(
-    (result, index) => shouldSuspend(defaultedQueries[index], result)
-  );
-  const suspensePromises = shouldAtLeastOneSuspend ? optimisticResult.flatMap((result, index) => {
-    const opts = defaultedQueries[index];
-    if (opts && shouldSuspend(opts, result)) {
-      const queryObserver = new QueryObserver(client, opts);
-      return fetchOptimistic(opts, queryObserver, errorResetBoundary);
-    }
-    return [];
-  }) : [];
-  if (suspensePromises.length > 0) {
-    throw Promise.all(suspensePromises);
-  }
-  const firstSingleResultWhichShouldThrow = optimisticResult.find(
-    (result, index) => {
-      const query = defaultedQueries[index];
-      return query && getHasError({
-        result,
-        errorResetBoundary,
-        throwOnError: query.throwOnError,
-        query: client.getQueryCache().get(query.queryHash),
-        suspense: query.suspense
-      });
-    }
-  );
-  if (firstSingleResultWhichShouldThrow?.error) {
-    throw firstSingleResultWhichShouldThrow.error;
-  }
-  return getCombinedResult(trackResult());
-}
-
 function useBaseQuery(options, Observer, queryClient) {
   const isRestoring = useIsRestoring();
   const errorResetBoundary = useQueryErrorResetBoundary();
-  const client = useQueryClient(queryClient);
+  const client = useQueryClient();
   const defaultedOptions = client.defaultQueryOptions(options);
   client.getDefaultOptions().queries?._experimental_beforeQuery?.(
     defaultedOptions
@@ -2725,224 +2706,260 @@ function useBaseQuery(options, Observer, queryClient) {
 }
 
 function useQuery(options, queryClient) {
-  return useBaseQuery(options, QueryObserver, queryClient);
+  return useBaseQuery(options, QueryObserver);
 }
 
-function useSuspenseQuery(options, queryClient) {
-  return useBaseQuery(
-    {
-      ...options,
-      enabled: true,
-      suspense: true,
-      throwOnError: defaultThrowOnError,
-      placeholderData: void 0
-    },
-    QueryObserver,
-    queryClient
-  );
+var cacheEventTypes = ["added", "removed", "updated"];
+function isCacheEventType(eventType) {
+  return cacheEventTypes.includes(eventType);
 }
-
-function useSuspenseInfiniteQuery(options, queryClient) {
-  return useBaseQuery(
-    {
-      ...options,
-      enabled: true,
-      suspense: true,
-      throwOnError: defaultThrowOnError
-    },
-    InfiniteQueryObserver,
-    queryClient
-  );
-}
-
-function useSuspenseQueries(options, queryClient) {
-  return useQueries(
-    {
-      ...options,
-      queries: options.queries.map((query) => {
-        return {
-          ...query,
-          suspense: true,
-          throwOnError: defaultThrowOnError,
-          enabled: true,
-          placeholderData: void 0
-        };
-      })
-    },
-    queryClient
-  );
-}
-
-// src/usePrefetchQuery.tsx
-function usePrefetchQuery(options, queryClient) {
-  const client = useQueryClient(queryClient);
-  if (!client.getQueryState(options.queryKey)) {
-    client.prefetchQuery(options);
-  }
-}
-
-// src/usePrefetchInfiniteQuery.tsx
-function usePrefetchInfiniteQuery(options, queryClient) {
-  const client = useQueryClient(queryClient);
-  if (!client.getQueryState(options.queryKey)) {
-    client.prefetchInfiniteQuery(options);
-  }
-}
-
-// src/queryOptions.ts
-function queryOptions(options) {
-  return options;
-}
-
-// src/infiniteQueryOptions.ts
-function infiniteQueryOptions(options) {
-  return options;
-}
-
-var HydrationBoundary = ({
-  children,
-  options = {},
-  state,
-  queryClient
-}) => {
-  const client = useQueryClient(queryClient);
-  const optionsRef = remote__loadShare__react__loadShare__.useRef(options);
-  remote__loadShare__react__loadShare__.useEffect(() => {
-    optionsRef.current = options;
-  });
-  const hydrationQueue = remote__loadShare__react__loadShare__.useMemo(() => {
-    if (state) {
-      if (typeof state !== "object") {
-        return;
-      }
-      const queryCache = client.getQueryCache();
-      const queries = state.queries || [];
-      const newQueries = [];
-      const existingQueries = [];
-      for (const dehydratedQuery of queries) {
-        const existingQuery = queryCache.get(dehydratedQuery.queryHash);
-        if (!existingQuery) {
-          newQueries.push(dehydratedQuery);
+async function persistQueryClientRestore({
+  queryClient,
+  persister,
+  maxAge = 1e3 * 60 * 60 * 24,
+  buster = "",
+  hydrateOptions
+}) {
+  try {
+    const persistedClient = await persister.restoreClient();
+    if (persistedClient) {
+      if (persistedClient.timestamp) {
+        const expired = Date.now() - persistedClient.timestamp > maxAge;
+        const busted = persistedClient.buster !== buster;
+        if (expired || busted) {
+          return persister.removeClient();
         } else {
-          const hydrationIsNewer = dehydratedQuery.state.dataUpdatedAt > existingQuery.state.dataUpdatedAt || dehydratedQuery.promise && existingQuery.state.status !== "pending" && existingQuery.state.fetchStatus !== "fetching" && dehydratedQuery.dehydratedAt !== void 0 && dehydratedQuery.dehydratedAt > existingQuery.state.dataUpdatedAt;
-          if (hydrationIsNewer) {
-            existingQueries.push(dehydratedQuery);
-          }
+          hydrate(queryClient, persistedClient.clientState, hydrateOptions);
         }
-      }
-      if (newQueries.length > 0) {
-        hydrate(client, { queries: newQueries }, optionsRef.current);
-      }
-      if (existingQueries.length > 0) {
-        return existingQueries;
+      } else {
+        return persister.removeClient();
       }
     }
-    return void 0;
-  }, [client, state]);
+  } catch (err) {
+    await persister.removeClient();
+    throw err;
+  }
+}
+async function persistQueryClientSave({
+  queryClient,
+  persister,
+  buster = "",
+  dehydrateOptions
+}) {
+  const persistClient = {
+    buster,
+    timestamp: Date.now(),
+    clientState: dehydrate(queryClient, dehydrateOptions)
+  };
+  await persister.persistClient(persistClient);
+}
+function persistQueryClientSubscribe(props) {
+  const unsubscribeQueryCache = props.queryClient.getQueryCache().subscribe((event) => {
+    if (isCacheEventType(event.type)) {
+      persistQueryClientSave(props);
+    }
+  });
+  const unsubscribeMutationCache = props.queryClient.getMutationCache().subscribe((event) => {
+    if (isCacheEventType(event.type)) {
+      persistQueryClientSave(props);
+    }
+  });
+  return () => {
+    unsubscribeQueryCache();
+    unsubscribeMutationCache();
+  };
+}
+
+var PersistQueryClientProvider = ({
+  children,
+  persistOptions,
+  onSuccess,
+  onError,
+  ...props
+}) => {
+  const [isRestoring, setIsRestoring] = remote__loadShare__react__loadShare__.useState(true);
+  const refs = remote__loadShare__react__loadShare__.useRef({ persistOptions, onSuccess, onError });
+  const didRestore = remote__loadShare__react__loadShare__.useRef(false);
   remote__loadShare__react__loadShare__.useEffect(() => {
-    if (hydrationQueue) {
-      hydrate(client, { queries: hydrationQueue }, optionsRef.current);
+    refs.current = { persistOptions, onSuccess, onError };
+  });
+  remote__loadShare__react__loadShare__.useEffect(() => {
+    const options = {
+      ...refs.current.persistOptions,
+      queryClient: props.client
+    };
+    if (!didRestore.current) {
+      didRestore.current = true;
+      persistQueryClientRestore(options).then(() => refs.current.onSuccess?.()).catch(() => refs.current.onError?.()).finally(() => {
+        setIsRestoring(false);
+      });
     }
-  }, [client, hydrationQueue]);
-  return children;
+    return isRestoring ? void 0 : persistQueryClientSubscribe(options);
+  }, [props.client, isRestoring]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(QueryClientProvider, { ...props, children: /* @__PURE__ */ jsxRuntimeExports.jsx(IsRestoringProvider, { value: isRestoring, children }) });
 };
 
-function useIsFetching(filters, queryClient) {
-  const client = useQueryClient(queryClient);
-  const queryCache = client.getQueryCache();
-  return remote__loadShare__react__loadShare__.useSyncExternalStore(
-    remote__loadShare__react__loadShare__.useCallback(
-      (onStoreChange) => queryCache.subscribe(notifyManager.batchCalls(onStoreChange)),
-      [queryCache]
-    ),
-    () => client.isFetching(filters),
-    () => client.isFetching(filters)
-  );
+function promisifyRequest(request) {
+    return new Promise((resolve, reject) => {
+        // @ts-ignore - file size hacks
+        request.oncomplete = request.onsuccess = () => resolve(request.result);
+        // @ts-ignore - file size hacks
+        request.onabort = request.onerror = () => reject(request.error);
+    });
+}
+function createStore(dbName, storeName) {
+    let dbp;
+    const getDB = () => {
+        if (dbp)
+            return dbp;
+        const request = indexedDB.open(dbName);
+        request.onupgradeneeded = () => request.result.createObjectStore(storeName);
+        dbp = promisifyRequest(request);
+        dbp.then((db) => {
+            // It seems like Safari sometimes likes to just close the connection.
+            // It's supposed to fire this event when that happens. Let's hope it does!
+            db.onclose = () => (dbp = undefined);
+        }, () => { });
+        return dbp;
+    };
+    return (txMode, callback) => getDB().then((db) => callback(db.transaction(storeName, txMode).objectStore(storeName)));
+}
+let defaultGetStoreFunc;
+function defaultGetStore() {
+    if (!defaultGetStoreFunc) {
+        defaultGetStoreFunc = createStore('keyval-store', 'keyval');
+    }
+    return defaultGetStoreFunc;
+}
+/**
+ * Get a value by its key.
+ *
+ * @param key
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function get(key, customStore = defaultGetStore()) {
+    return customStore('readonly', (store) => promisifyRequest(store.get(key)));
+}
+/**
+ * Set a value with a key.
+ *
+ * @param key
+ * @param value
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function set(key, value, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        store.put(value, key);
+        return promisifyRequest(store.transaction);
+    });
+}
+/**
+ * Delete a particular key from the store.
+ *
+ * @param key
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function del(key, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        store.delete(key);
+        return promisifyRequest(store.transaction);
+    });
 }
 
-function useIsMutating(filters, queryClient) {
-  const client = useQueryClient(queryClient);
-  return useMutationState(
-    { filters: { ...filters, status: "pending" } },
-    client
-  ).length;
-}
-function getResult(mutationCache, options) {
-  return mutationCache.findAll(options.filters).map(
-    (mutation) => options.select ? options.select(mutation) : mutation.state
-  );
-}
-function useMutationState(options = {}, queryClient) {
-  const mutationCache = useQueryClient(queryClient).getMutationCache();
-  const optionsRef = remote__loadShare__react__loadShare__.useRef(options);
-  const result = remote__loadShare__react__loadShare__.useRef(null);
-  if (result.current === null) {
-    result.current = getResult(mutationCache, options);
-  }
-  remote__loadShare__react__loadShare__.useEffect(() => {
-    optionsRef.current = options;
-  });
-  return remote__loadShare__react__loadShare__.useSyncExternalStore(
-    remote__loadShare__react__loadShare__.useCallback(
-      (onStoreChange) => mutationCache.subscribe(() => {
-        const nextResult = replaceEqualDeep(
-          result.current,
-          getResult(mutationCache, optionsRef.current)
-        );
-        if (result.current !== nextResult) {
-          result.current = nextResult;
-          notifyManager.schedule(onStoreChange);
-        }
-      }),
-      [mutationCache]
-    ),
-    () => result.current,
-    () => result.current
-  );
-}
-
-function useMutation(options, queryClient) {
-  const client = useQueryClient(queryClient);
-  const [observer] = remote__loadShare__react__loadShare__.useState(
-    () => new MutationObserver(
-      client,
-      options
-    )
-  );
-  remote__loadShare__react__loadShare__.useEffect(() => {
-    observer.setOptions(options);
-  }, [observer, options]);
-  const result = remote__loadShare__react__loadShare__.useSyncExternalStore(
-    remote__loadShare__react__loadShare__.useCallback(
-      (onStoreChange) => observer.subscribe(notifyManager.batchCalls(onStoreChange)),
-      [observer]
-    ),
-    () => observer.getCurrentResult(),
-    () => observer.getCurrentResult()
-  );
-  const mutate = remote__loadShare__react__loadShare__.useCallback(
-    (variables, mutateOptions) => {
-      observer.mutate(variables, mutateOptions).catch(noop);
+function createIDBPersister(idbValidKey = "reactQueryRemote") {
+  return {
+    persistClient: async (client) => {
+      await set(idbValidKey, client);
     },
-    [observer]
-  );
-  if (result.error && shouldThrowError(observer.options.throwOnError, [result.error])) {
-    throw result.error;
+    restoreClient: async () => {
+      return await get(idbValidKey);
+    },
+    removeClient: async () => {
+      await del(idbValidKey);
+    }
+  };
+}
+
+const BASE = "https://jsonplaceholder.typicode.com";
+async function fetchTodos() {
+  const res = await fetch(`${BASE}/todos?_limit=10`);
+  if (!res.ok) throw new Error("Failed to fetch todos");
+  return res.json();
+}
+async function fetchPosts() {
+  const res = await fetch(`${BASE}/posts?_limit=5`);
+  if (!res.ok) throw new Error("Failed to fetch posts");
+  return res.json();
+}
+function TodosList() {
+  const [onlineStatus, setOnlineStatus] = remote__loadShare__react__loadShare__.useState(navigator.onLine);
+  console.log("onlineStatus", onlineStatus);
+  remote__loadShare__react__loadShare__.useEffect(() => {
+    window.addEventListener("offline", () => {
+      console.log("offline");
+      setOnlineStatus(false);
+    });
+    window.addEventListener("online", () => {
+      console.log("online");
+      setOnlineStatus(true);
+    });
+    return () => {
+      window.removeEventListener("offline", () => {
+        setOnlineStatus(false);
+      });
+      window.removeEventListener("online", () => {
+        setOnlineStatus(true);
+      });
+    };
+  }, []);
+  const todos = useQuery({
+    queryKey: ["todos"],
+    queryFn: fetchTodos,
+    enabled: onlineStatus
+  });
+  const posts = useQuery({
+    queryKey: ["posts"],
+    queryFn: fetchPosts,
+    enabled: onlineStatus
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Todos" }),
+    todos.isLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Loading todos..." }),
+    todos.isError && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Failed to load todos." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { children: todos.data?.map((todo) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "li",
+      {
+        style: { textDecoration: todo.completed ? "line-through" : "none" },
+        children: todo.title
+      },
+      todo.id
+    )) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { children: "Posts" }),
+    posts.isLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Loading posts..." }),
+    posts.isError && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Failed to load posts." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { children: posts.data?.map((post) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: post.title }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: post.body })
+    ] }, post.id)) })
+  ] });
+}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1e4
+    }
   }
-  return { ...result, mutate, mutateAsync: result.mutate };
-}
-
-// src/mutationOptions.ts
-function mutationOptions(options) {
-  return options;
-}
-
-function useInfiniteQuery(options, queryClient) {
-  return useBaseQuery(
-    options,
-    InfiniteQueryObserver,
-    queryClient
+});
+const persister = createIDBPersister();
+function Todos() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    PersistQueryClientProvider,
+    {
+      client: queryClient,
+      persistOptions: { persister },
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(TodosList, {})
+    }
   );
 }
 
-export { CancelledError, HydrationBoundary, InfiniteQueryObserver, IsRestoringProvider, Mutation, MutationCache, MutationObserver, QueriesObserver, Query, QueryCache, QueryClient, QueryClientContext, QueryClientProvider, QueryErrorResetBoundary, QueryObserver, dataTagErrorSymbol, dataTagSymbol, streamedQuery as experimental_streamedQuery, focusManager, hashKey, hydrate, infiniteQueryOptions, isCancelledError, isServer, matchMutation, matchQuery, mutationOptions, noop, notifyManager, onlineManager, partialMatchKey, queryOptions, replaceEqualDeep, shouldThrowError, skipToken, timeoutManager, unsetMarker, useInfiniteQuery, useIsFetching, useIsMutating, useIsRestoring, useMutation, useMutationState, usePrefetchInfiniteQuery, usePrefetchQuery, useQueries, useQuery, useQueryClient, useQueryErrorResetBoundary, useSuspenseInfiniteQuery, useSuspenseQueries, useSuspenseQuery };
+export { Todos as default };
