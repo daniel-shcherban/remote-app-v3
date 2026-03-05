@@ -1,6 +1,8 @@
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
 import { r as remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__ } from './remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__-DQ2XyYjM.js';
+import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-BCX567UT.js';
 import './remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
+import './_commonjsHelpers-B85MJLTf.js';
 
 const BASE = "https://jsonplaceholder.typicode.com";
 async function fetchTodos() {
@@ -14,8 +16,36 @@ async function fetchPosts() {
   return res.json();
 }
 function Todos() {
-  const todos = remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.useQuery({ queryKey: ["todos"], queryFn: fetchTodos });
-  const posts = remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.useQuery({ queryKey: ["posts"], queryFn: fetchPosts });
+  const [onlineStatus, setOnlineStatus] = remote__loadShare__react__loadShare__.useState(navigator.onLine);
+  console.log("onlineStatus", onlineStatus);
+  remote__loadShare__react__loadShare__.useEffect(() => {
+    window.addEventListener("offline", () => {
+      console.log("offline");
+      setOnlineStatus(false);
+    });
+    window.addEventListener("online", () => {
+      console.log("online");
+      setOnlineStatus(true);
+    });
+    return () => {
+      window.removeEventListener("offline", () => {
+        setOnlineStatus(false);
+      });
+      window.removeEventListener("online", () => {
+        setOnlineStatus(true);
+      });
+    };
+  }, []);
+  const todos = remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.useQuery({
+    queryKey: ["todos"],
+    queryFn: fetchTodos,
+    enabled: onlineStatus
+  });
+  const posts = remote__loadShare___mf_0_tanstack_mf_1_react_mf_2_query__loadShare__.useQuery({
+    queryKey: ["posts"],
+    queryFn: fetchPosts,
+    enabled: onlineStatus
+  });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Todos" }),
     todos.isLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Loading todos..." }),
