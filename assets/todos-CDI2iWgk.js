@@ -2921,7 +2921,8 @@ function TodosList() {
   const posts = useQuery({
     queryKey: ["posts"],
     queryFn: fetchPosts,
-    enabled: onlineStatus
+    enabled: onlineStatus,
+    meta: { persist: true }
   });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Todos" }),
@@ -2957,7 +2958,14 @@ function Todos() {
     PersistQueryClientProvider,
     {
       client: queryClient,
-      persistOptions: { persister },
+      persistOptions: {
+        persister,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            return !!query.meta?.persist;
+          }
+        }
+      },
       children: /* @__PURE__ */ jsxRuntimeExports.jsx(TodosList, {})
     }
   );
