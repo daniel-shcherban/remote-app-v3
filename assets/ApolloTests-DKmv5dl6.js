@@ -20586,6 +20586,7 @@ const handleGraphQLError = (graphQLErrors, operation) => {
   console.error("handleGraphQLError", graphQLErrors);
 };
 const errorLink = onError(({ networkError, graphQLErrors, operation }) => {
+  console.log("networkError", networkError);
   handleSessionExpiry(networkError, graphQLErrors);
   if (networkError) {
     handleNetworkError(networkError);
