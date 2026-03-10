@@ -23,6 +23,17 @@ const exposesMap = {
           });
           return exportModule
         }
+      ,
+        "./ApolloTests": async () => {
+          const importModule = await __vitePreload(() => import('./ApolloTests-eW0z8k5-.js'),true              ?[]:void 0);
+          const exportModule = {};
+          Object.assign(exportModule, importModule);
+          Object.defineProperty(exportModule, "__esModule", {
+            value: true,
+            enumerable: false
+          });
+          return exportModule
+        }
       
   };
 
