@@ -1,5 +1,5 @@
 import { i as init_1, r as remote__mf_v__runtimeInit__mf_v__ } from './assets/remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
-import exposesMap from './assets/virtualExposes-oKWxpmoJ.js';
+import exposesMap from './assets/virtualExposes-Bap5ZNpw.js';
 import { _ as __vitePreload } from './assets/preload-helper-Fqj7938V.js';
 
 const importMap = {
@@ -10,7 +10,7 @@ const importMap = {
         }
       ,
         "react-dom": async () => {
-          let pkg = await __vitePreload(() => import('./assets/index-DV3m-Unc.js').then(n => n.i),true              ?[]:void 0);
+          let pkg = await __vitePreload(() => import('./assets/index-mFhPAwGI.js').then(n => n.i),true              ?[]:void 0);
           return pkg
         }
       

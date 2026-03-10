@@ -1,8 +1,8 @@
 import { r as remote__mf_v__runtimeInit__mf_v__, a as index_cjs } from './remote__mf_v__runtimeInit__mf_v__-DOo_uYy-.js';
 import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
-import { r as remote__loadShare__react__loadShare__, R as React$2 } from './remote__loadShare__react__loadShare__-Btl30rLB.js';
+import { r as remote__loadShare__react__loadShare__, R as React$2, a as React$3 } from './remote__loadShare__react__loadShare__-DvOLxNJD.js';
 import { g as getDefaultExportFromCjs, c as commonjsGlobal } from './_commonjsHelpers-BFTU3MAI.js';
-import Todos from './todos-CaqZIyaN.js';
+import Todos from './todos-Z6QNK-jh.js';
 
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {
@@ -21624,6 +21624,13 @@ function useLinkClickHandler(to, _temp) {
   }, [location, navigate, path, replaceProp, state, target, to, preventScrollReset, relative, viewTransition]);
 }
 
+function App() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Home" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/todos", children: "Go to Todos" }) })
+  ] });
+}
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -38644,13 +38651,6 @@ function bindObservableMethods(observable) {
     };
 }
 
-function App() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Home" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/todos", children: "Go to Todos" }) })
-  ] });
-}
-
 const GET_MEDIA = gql`
   query ($id: Int) {
     Media(id: $id, type: ANIME) {
@@ -39209,6 +39209,11 @@ var CachePersistor = (function () {
     return CachePersistor;
 }());
 
+const persistCache = (function (options) {
+    var persistor = new CachePersistor(options);
+    return persistor.restore();
+});
+
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -39259,11 +39264,33 @@ var SynchronousStorage = (function (_super) {
     return SynchronousStorage;
 }(Storage));
 
+var LocalForageWrapper = (function () {
+    function LocalForageWrapper(storage) {
+        this.storage = storage;
+    }
+    LocalForageWrapper.prototype.getItem = function (key) {
+        return this.storage.getItem(key);
+    };
+    LocalForageWrapper.prototype.removeItem = function (key) {
+        return this.storage.removeItem(key);
+    };
+    LocalForageWrapper.prototype.setItem = function (key, value) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.storage
+                .setItem(key, value)
+                .then(function () { return resolve(); })
+                .catch(function () { return reject(); });
+        });
+    };
+    return LocalForageWrapper;
+}());
+
 function commonjsRequire(path) {
 	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
 }
 
-var localforage = {exports: {}};
+var localforage$1 = {exports: {}};
 
 /*!
     localForage -- Offline Storage, Improved
@@ -42079,7 +42106,10 @@ var localforage = {exports: {}};
 
 	},{"3":3}]},{},[4])(4)
 	}); 
-} (localforage));
+} (localforage$1));
+
+var localforageExports = localforage$1.exports;
+const localforage = /*@__PURE__*/getDefaultExportFromCjs(localforageExports);
 
 function onError(errorHandler) {
     return new ApolloLink(function (operation, forward) {
@@ -42257,10 +42287,31 @@ const apolloClientCache = new InMemoryCache({
     }
   }
 });
+const initPersistence = async () => {
+  await persistCache({
+    cache: apolloClientCache,
+    storage: new LocalForageWrapper(localforage)
+  });
+};
 const apolloClient = new ApolloClient({
   link: ApolloLink.from([errorLink, httpLink]),
   cache: apolloClientCache
 });
+
+const ApolloClientProvider = ({
+  children
+}) => {
+  const [isLoaded, setIsLoaded] = React$3.useState(false);
+  React$3.useEffect(() => {
+    initPersistence().finally(() => {
+      setIsLoaded(true);
+    });
+  }, []);
+  if (!isLoaded) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading..." });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(ApolloProvider, { client: apolloClient, children });
+};
 
 const router = createBrowserRouter(
   [
@@ -42280,5 +42331,5 @@ const router = createBrowserRouter(
   { basename: "/remote-app-v3" }
 );
 clientExports.createRoot(document.getElementById("root")).render(
-  /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare__react__loadShare__.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ApolloProvider, { client: apolloClient, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router }) }) })
+  /* @__PURE__ */ jsxRuntimeExports.jsx(remote__loadShare__react__loadShare__.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ApolloClientProvider, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router }) }) })
 );

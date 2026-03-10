@@ -1,5 +1,5 @@
 import { g as getDefaultExportFromCjs } from './_commonjsHelpers-BFTU3MAI.js';
-import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-Btl30rLB.js';
+import { r as remote__loadShare__react__loadShare__ } from './remote__loadShare__react__loadShare__-DvOLxNJD.js';
 
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {

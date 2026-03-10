@@ -32,11 +32,11 @@ function _mergeNamespaces(n, m) {
     const exportModule = await res.then(factory => factory());
     var remote__loadShare__react__loadShare__ = exportModule;
 
-const remote__loadShare__react__loadShare___default = /*@__PURE__*/getDefaultExportFromCjs(remote__loadShare__react__loadShare__);
+const React = /*@__PURE__*/getDefaultExportFromCjs(remote__loadShare__react__loadShare__);
 
-const React = /*#__PURE__*/_mergeNamespaces({
+const React$1 = /*#__PURE__*/_mergeNamespaces({
   __proto__: null,
-  default: remote__loadShare__react__loadShare___default
+  default: React
 }, [remote__loadShare__react__loadShare__]);
 
-export { React as R, remote__loadShare__react__loadShare__ as r };
+export { React$1 as R, React as a, remote__loadShare__react__loadShare__ as r };
