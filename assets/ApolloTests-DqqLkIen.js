@@ -20665,6 +20665,9 @@ const GET_MEDIA = gql`
         english
         native
       }
+      coverImage {
+        extraLarge
+      }
     }
   }
 `;
@@ -20684,6 +20687,14 @@ const ApolloTestsPage = () => {
       "Apollo Test — Media #",
       id
     ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "img",
+      {
+        src: "https://ichef.bbci.co.uk/ace/standard/3840/cpsprodpb/33b5/live/78d8d060-21ce-11f0-89a9-cb5ed9bbefd9.jpg",
+        width: 300
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: data.Media.coverImage.extraLarge, width: 300 }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Romaji:" }),

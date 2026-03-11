@@ -3,7 +3,7 @@ import { j as jsxRuntimeExports } from './jsx-runtime-DtXR568w.js';
 import { r as remote__loadShare__react__loadShare__, R as React$1 } from './remote__loadShare__react__loadShare__-DvOLxNJD.js';
 import { g as getDefaultExportFromCjs } from './_commonjsHelpers-BFTU3MAI.js';
 import Todos from './todos-Z6QNK-jh.js';
-import ApolloTests from './ApolloTests-DKmv5dl6.js';
+import ApolloTests from './ApolloTests-DqqLkIen.js';
 
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {
